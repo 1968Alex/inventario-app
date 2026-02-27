@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="theme-color" content="#0d0f14"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Inventario"/>
+<link rel="manifest" href="data:application/json;charset=utf-8,{
+  &quot;name&quot;: &quot;Inventario&quot;,
+  &quot;short_name&quot;: &quot;Inventario&quot;,
+  &quot;description&quot;: &quot;App de inventario offline&quot;,
+  &quot;start_url&quot;: &quot;.&quot;,
+  &quot;display&quot;: &quot;standalone&quot;,
+  &quot;background_color&quot;: &quot;#0d0f14&quot;,
+  &quot;theme_color&quot;: &quot;#00e87a&quot;,
+  &quot;orientation&quot;: &quot;portrait&quot;,
+  &quot;icons&quot;: [
+    {&quot;src&quot;: &quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230d0f14'/><text y='.9em' font-size='80'>📦</text></svg>&quot;, &quot;sizes&quot;: &quot;any&quot;, &quot;type&quot;: &quot;image/svg+xml&quot;}
+  ]
+}"/>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Inventario</title>
+<style>
+/* Fuentes del sistema - funciona offline */
+
+:root {
+  --bg: #0d0f14;
+  --surface: #161922;
+  --surface2: #1e2330;
+  --border: #2a3040;
+  --accent: #00e87a;
+  --accent2: #00b85e;
+  --red: #ff3b3b;
+  --text: #e8eaf0;
+  --text2: #8a92a8;
+  --text3: #555d72;
+  --warning: #ffb800;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+#screen-login.active { display: flex; }
+
+/* ── LOGIN ── */
+#screen-login {
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 380px;
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.login-logo .emoji { font-size: 48px; }
+.login-logo h1 { font-size: 22px; font-weight: 800; letter-spacing: 3px; margin-top: 8px; }
+.login-logo p { color: var(--text2); font-size: 12px; letter-spacing: 1px; }
+
+.input-group { margin-bottom: 14px; }
+.input-group input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 14px;
+  padding: 12px 16px;
+  outline: none;
+  transition: border-color .2s;
+}
+.input-group input:focus { border-color: var(--accent); }
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 13px 20px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  letter-spacing: .5px;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { opacity: .9; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); margin-top: 10px; }
+.btn-outline:hover { border-color: var(--text2); color: var(--text); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-warn { background: var(--surface2); color: var(--warning); border: 1px solid var(--warning); }
+
+.divider { text-align: center; color: var(--text3); font-size: 12px; margin: 12px 0; }
+.login-hint { text-align: center; color: var(--text3); font-size: 11px; margin-top: 16px; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-left .back-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background .15s;
+}
+.topbar-left .back-btn:hover { background: var(--surface2); }
+.topbar-title { font-weight: 700; font-size: 15px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.session-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--text2);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.dot.red { background: var(--red); }
+
+/* ── MAIN LIST ── */
+.main-content { padding: 16px 20px; max-width: 600px; margin: 0 auto; }
+
+.session-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.session-card .label { font-size: 11px; color: var(--text3); letter-spacing: .5px; text-transform: uppercase; }
+.session-card .val { font-family: 'Courier New', 'Consolas', monospace; font-size: 14px; color: var(--accent); margin-top: 2px; }
+.session-card .change-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+.session-card .change-btn:hover { border-color: var(--red); color: var(--red); }
+
+.action-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.action-buttons .btn { flex: 1; min-width: 140px; padding: 11px 14px; font-size: 12px; letter-spacing: .5px; }
+
+.area-list { display: flex; flex-direction: column; gap: 8px; }
+.area-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  text-decoration: none;
+  color: var(--text);
+}
+.area-item:hover { border-color: var(--accent); background: var(--surface2); }
+.area-item-left { display: flex; align-items: center; gap: 12px; }
+.area-icon { font-size: 18px; }
+.area-name { font-weight: 600; font-size: 14px; }
+.area-sub { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: 'Courier New', 'Consolas', monospace; }
+.area-right { display: flex; align-items: center; gap: 10px; }
+.area-kg {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  background: rgba(0,232,122,.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.area-kg.zero { color: var(--text3); background: none; }
+.chevron { color: var(--text3); font-size: 14px; }
+
+/* ── AREA SCREEN ── */
+.mic-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px 16px;
+}
+.mic-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--red);
+  background: rgba(255,59,59,.12);
+  color: var(--red);
+  font-size: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  position: relative;
+}
+.mic-btn.recording {
+  border-color: var(--accent);
+  background: rgba(0,232,122,.15);
+  color: var(--accent);
+  box-shadow: 0 0 0 0 rgba(0,232,122,.4);
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0,232,122,.4); }
+  70% { box-shadow: 0 0 0 16px rgba(0,232,122,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,232,122,0); }
+}
+.mic-status { font-size: 11px; color: var(--text3); margin-top: 8px; letter-spacing: .5px; }
+.transcript-box {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  font-family: 'Courier New', 'Consolas', monospace;
+  min-height: 40px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* ── MANUAL FORM ── */
+.form-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 0 20px 16px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.form-section h3 { font-size: 11px; letter-spacing: 1px; color: var(--text3); text-transform: uppercase; margin-bottom: 12px; }
+.form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.form-field { flex: 1; min-width: 100px; }
+.form-field label { display: block; font-size: 10px; color: var(--text3); letter-spacing: .5px; margin-bottom: 4px; text-transform: uppercase; }
+.form-field input, .form-field select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color .2s;
+}
+.form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+.form-field select option { background: var(--surface2); }
+.total-preview {
+  background: var(--surface2);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── RECORDS ── */
+.records-section { padding: 0 20px 20px; max-width: 600px; margin: 0 auto; }
+.records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 10px 14px;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.records-header .label { font-size: 11px; color: var(--text3); letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+.records-header .totals { font-family: 'Courier New', 'Consolas', monospace; font-size: 12px; color: var(--accent); white-space: nowrap; text-align: right; }
+.record-list { border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); }
+.record-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.record-item:last-child { border-bottom: none; }
+.record-prod { font-weight: 600; }
+.record-envase { font-family: 'Courier New', 'Consolas', monospace; color: var(--text2); font-size: 11px; }
+.record-qty { font-family: 'Courier New', 'Consolas', monospace; color: var(--text2); font-size: 11px; text-align: right; }
+.record-kg { font-family: 'Courier New', 'Consolas', monospace; color: var(--accent); font-size: 12px; text-align: right; }
+.record-del {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color .15s;
+}
+.record-del:hover { color: var(--red); }
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: var(--text3);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.empty-state p:last-child { font-size: 11px; margin-top: 4px; }
+
+/* ── SUMMARY SCREEN ── */
+.summary-content { padding: 20px; max-width: 600px; margin: 0 auto; }
+.export-group { margin-bottom: 24px; }
+.export-group h3 { font-size: 11px; letter-spacing: 1px; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+.export-row { display: flex; gap: 10px; }
+.export-row .btn { flex: 1; padding: 13px; font-size: 13px; }
+.btn-pdf { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+.btn-pdf:hover { border-color: var(--text2); }
+.btn-excel { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+.btn-excel:hover { border-color: var(--accent); }
+
+.summary-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+.summary-table th {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: .5px;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+.summary-table td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  font-family: 'Courier New', 'Consolas', monospace;
+}
+.summary-table tr:hover td { background: var(--surface2); }
+.summary-table .num { text-align: right; color: var(--accent); }
+.summary-table .total-row td { background: var(--surface2); font-weight: 700; color: var(--text); }
+
+.danger-zone { margin-top: 24px; }
+.danger-zone h3 { font-size: 11px; letter-spacing: 1px; color: var(--red); text-transform: uppercase; margin-bottom: 10px; opacity: .7; }
+
+/* ── DIALOG ── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  display: none;
+}
+.dialog-overlay.open { display: flex; }
+.dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+}
+.dialog h3 { font-size: 15px; margin-bottom: 8px; }
+.dialog p { color: var(--text2); font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+.dialog-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 50vh; overflow-y: auto; }
+.dialog-option {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color .15s;
+  text-align: left;
+  color: var(--text);
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+.dialog-option:hover { border-color: var(--accent); }
+.dialog-option .num { color: var(--accent); font-family: 'Courier New', 'Consolas', monospace; margin-right: 6px; }
+.dialog-actions { display: flex; gap: 8px; }
+.dialog-actions .btn { flex: 1; padding: 10px; font-size: 12px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  font-size: 13px;
+  z-index: 200;
+  transition: transform .3s;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: var(--accent); color: var(--accent); }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+/* ── CATALOG IMPORT ── */
+#catalog-import-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="emoji">📦</div>
+      <h1>INVENTARIO</h1>
+      <p>Control por voz · Multi-dispositivo</p>
+    </div>
+    <div class="input-group">
+      <input type="text" id="session-input" placeholder="Código de sesión" autocomplete="off" spellcheck="false"/>
+    </div>
+    <button class="btn btn-primary" onclick="enterSession()">Entrar →</button>
+    <div class="divider">o</div>
+    <button class="btn btn-outline" onclick="randomSession()">Crear sesión nueva aleatoria</button>
+    <p class="login-hint">Todos los dispositivos con el mismo código comparten los datos.<br>Podés usar letras y números, sin espacios.</p>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div id="screen-main" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="emoji">📦</span>
+      <span class="topbar-title">Inventario</span>
+    </div>
+    <div class="topbar-right">
+      <span class="session-badge" id="main-session-label">—</span>
+      <div class="dot" id="main-dot"></div>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="session-card">
+      <div>
+        <div class="label">Sesión activa</div>
+        <div class="val" id="main-session-val">—</div>
+      </div>
+      <button class="change-btn" onclick="changeSession()">✕ Cambiar</button>
+    </div>
+    <div class="action-buttons">
+      <button class="btn btn-outline" onclick="goToSummary()">📊 Resumen Global</button>
+      <button class="btn btn-outline" onclick="goToSummaryByArea()">📂 Resumen por Área</button>
+    </div>
+    <div class="action-buttons">
+      <label class="btn btn-outline" style="text-align:center;cursor:pointer;" for="catalog-import-input">📋 Importar Catálogo</label>
+      <input type="file" id="catalog-import-input" accept=".xlsx,.csv,.txt" onchange="importCatalog(event)"/>
+    </div>
+    <div class="area-list" id="area-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ AREA ═══════════════ -->
+<div id="screen-area" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" onclick="goBack('screen-main')">←</button>
+      <span class="topbar-title" id="area-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">Área</span>
+    </div>
+    <div class="topbar-right" style="gap:6px;">
+      <span id="area-kg-bar" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);white-space:nowrap;">0 kg</span>
+      <div class="dot" id="area-dot"></div>
+    </div>
+  </div>
+
+  <div class="mic-section" style="padding:16px 20px 10px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <button id="ptt-btn"
+        style="width:90px;height:90px;border-radius:50%;border:4px solid var(--accent);background:rgba(0,232,122,.12);color:var(--accent);font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none;-webkit-user-select:none;touch-action:none;"
+        onmousedown="pttStart()" onmouseup="pttStop()" onmouseleave="pttStop()"
+        ontouchstart="pttStart(event)" ontouchend="pttStop(event)" ontouchcancel="pttStop(event)">
+        🎤
+      </button>
+      <div style="text-align:center;">
+        <div id="mic-status" style="font-size:11px;letter-spacing:1px;color:var(--text3);font-family:'Syne',sans-serif;font-weight:700;">MANTENÉ APRETADO PARA HABLAR</div>
+      </div>
+    </div>
+    <div class="transcript-box" id="transcript-box" style="margin-top:10px;">—</div>
+    <div id="ai-status" style="font-size:11px;color:var(--text3);margin-top:4px;min-height:14px;text-align:center;"></div>
+  </div>
+
+  <div style="padding:0 20px 12px;max-width:600px;margin:0 auto;">
+    <button class="btn btn-outline" onclick="goToForm()" style="font-size:13px;padding:10px;">+ Carga Manual</button>
+  </div>
+
+  <div class="records-section">
+    <div class="records-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span class="label">Registros</span>
+      <span class="totals" id="area-totals">0 items · 0 kg</span>
+    </div>
+    <div id="record-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ FORM ═══════════════ -->
+<div id="screen-form" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" onclick="goBack('screen-area')">←</button>
+      <span class="topbar-title">Nuevo Registro — <span id="form-area-title"></span></span>
+    </div>
+  </div>
+  <div class="form-section" style="margin:20px auto;max-width:560px;">
+    <h3>Datos del Producto</h3>
+    <div class="form-row">
+      <div class="form-field" style="flex:1">
+        <label>Producto</label>
+        <input type="text" id="f-producto" placeholder="Ej: Tomate Bola" oninput="calcTotal()" list="prod-datalist"/>
+        <datalist id="prod-datalist"></datalist>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field" style="flex:1">
+        <label>Envase / Presentación</label>
+        <input type="text" id="f-envase" placeholder="Ej: Reja 15kg, Caja 20kg, Bolsa..."/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Cantidad</label>
+        <input type="number" id="f-cant" placeholder="0" min="0" oninput="calcTotal()"/>
+      </div>
+      <div class="form-field">
+        <label>kg / envase</label>
+        <input type="number" id="f-kgenv" placeholder="0" min="0" step="0.1" oninput="calcTotal()"/>
+      </div>
+      <div class="form-field">
+        <label>Total kg</label>
+        <div class="total-preview" id="f-total">0 kg</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" onclick="addRecord()">✓ Guardar</button>
+      <button class="btn btn-outline" onclick="goBack('screen-area')">✕ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SUMMARY GLOBAL ═══════════════ -->
+<div id="screen-summary" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" onclick="goBack('screen-main')">←</button>
+      <span class="topbar-title">Resumen Global</span>
+    </div>
+  </div>
+  <div class="summary-content">
+    <div class="export-group">
+      <h3>Exportar Resumen Global</h3>
+      <div class="export-row">
+        <button class="btn btn-pdf" onclick="exportPDF('global')">📄 PDF Global</button>
+        <button class="btn btn-excel" onclick="exportExcel('global')">📊 Excel Global</button>
+      </div>
+    </div>
+    <div class="danger-zone">
+      <h3>Zona peligrosa</h3>
+      <button class="btn btn-danger" onclick="clearAll()" style="margin-bottom:8px">⚠ Borrar Todo el Inventario</button>
+    </div>
+    <table class="summary-table" id="global-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th style="text-align:right">Envases</th>
+          <th style="text-align:right">Total kg</th>
+        </tr>
+      </thead>
+      <tbody id="global-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ SUMMARY BY AREA ═══════════════ -->
+<div id="screen-summary-area" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" onclick="goBack('screen-main')">←</button>
+      <span class="topbar-title">Resumen por Área</span>
+    </div>
+  </div>
+  <div class="summary-content">
+    <div class="export-group">
+      <h3>Exportar por Área</h3>
+      <div class="export-row">
+        <button class="btn btn-pdf" onclick="exportPDF('area')">📄 PDF por Área</button>
+        <button class="btn btn-excel" onclick="exportExcel('area')">📊 Excel por Área</button>
+      </div>
+    </div>
+    <div class="danger-zone">
+      <h3>Zona peligrosa</h3>
+      <button class="btn btn-warn" onclick="clearByArea()">🗑 Borrar por Área</button>
+    </div>
+    <div id="area-summary-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ DIALOG ═══════════════ -->
+<div class="dialog-overlay" id="dialog-overlay">
+  <div class="dialog">
+    <h3 id="dialog-title">Producto no encontrado</h3>
+    <p id="dialog-msg">¿Quisiste decir alguno de estos?</p>
+    <div class="dialog-options" id="dialog-options"></div>
+    <div class="dialog-actions">
+      <button class="btn btn-outline" onclick="closeDialog()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmDialogNew()">Agregar como nuevo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST ═══════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script>
+// SheetJS - carga desde CDN con fallback offline
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onerror = function() {
+    // Fallback: deshabilitar exportación Excel, solo PDF disponible
+    window.XLSX = {
+      utils: {
+        book_new: function() { return {SheetNames:[], Sheets:{}}; },
+        aoa_to_sheet: function() { return {}; },
+        book_append_sheet: function() {},
+        sheet_to_json: function() { return []; }
+      },
+      read: function() { return {SheetNames:[''], Sheets:{'':{}} }; },
+      writeFile: function() {
+        alert('Exportación Excel no disponible offline. Usa la opción PDF o conectate a internet una vez para activar esta función.');
+      }
+    };
+  };
+  document.head.appendChild(s);
+})();
+</script>
+<script>
+
+// ── CATALOG ──
+let CATALOG = [
+  "Tomate Bola","Tomate Saladette","Cebolla Blanca","Cebolla Morada",
+  "Lechuga Romana","Lechuga Sangría","Manzana Red Delicious","Manzana Granny Smith",
+  "Chile Poblano","Chile Habanero","Aguacate","Plátano","Zanahoria","Brócoli",
+  "Espinaca","Calabacita","Pepino","Sandía","Papaya","Mango"
+];
+
+// ── AREAS ──
+const AREAS = [
+  { id: "camara1", name: "Cámara 1", icon: "❄️" },
+  { id: "camara2", name: "Cámara 2", icon: "❄️" },
+  { id: "camara3", name: "Cámara 3", icon: "❄️" },
+  { id: "camara4", name: "Cámara 4", icon: "❄️" },
+  { id: "camara5", name: "Cámara 5", icon: "❄️" },
+  { id: "deposito_secos", name: "Depósito Secos", icon: "📦" },
+  { id: "bodega", name: "Bodega", icon: "🏛️" },
+  { id: "playon", name: "Playón", icon: "🏗️" },
+];
+
+// ── CATALOG PERSISTENCE ──
+function loadCustomCatalog() {
+  try {
+    const saved = localStorage.getItem('inv_custom_catalog');
+    if (saved) {
+      const extra = JSON.parse(saved);
+      extra.forEach(p => { if (!CATALOG.includes(p)) CATALOG.push(p); });
+    }
+  } catch(e) {}
+}
+
+function addToCatalog(producto) {
+  const nombre = producto.trim();
+  if (!nombre) return;
+  const ya = CATALOG.find(p => normalize(p) === normalize(nombre));
+  if (ya) return; // ya existe
+  CATALOG.push(nombre);
+  CATALOG.sort();
+  // Guardar los productos custom en localStorage
+  try {
+    const base = ["Tomate Bola","Tomate Saladette","Cebolla Blanca","Cebolla Morada",
+      "Lechuga Romana","Lechuga Sangría","Manzana Red Delicious","Manzana Granny Smith",
+      "Chile Poblano","Chile Habanero","Aguacate","Plátano","Zanahoria","Brócoli",
+      "Espinaca","Calabacita","Pepino","Sandía","Papaya","Mango"];
+    const custom = CATALOG.filter(p => !base.includes(p));
+    localStorage.setItem('inv_custom_catalog', JSON.stringify(custom));
+  } catch(e) {}
+  updateDatalist();
+}
+
+// ── STATE ──
+let session = "";
+let currentArea = null;
+let recognition = null;
+let isRecording = false;
+let pendingVoiceText = "";
+let dialogCallback = null;
+
+// ── STORAGE ──
+function storageKey(k) { return `inv_${session}_${k}`; }
+
+function getData(areaId) {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey(areaId)) || "[]");
+  } catch { return []; }
+}
+
+function setData(areaId, data) {
+  localStorage.setItem(storageKey(areaId), JSON.stringify(data));
+}
+
+function getAllData() {
+  let all = {};
+  AREAS.forEach(a => { all[a.id] = getData(a.id); });
+  return all;
+}
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goBack(to) {
+  if (to === 'screen-main' && isRecording) stopMic();
+  showScreen(to);
+  if (to === 'screen-main') renderAreaList();
+  if (to === 'screen-area') { renderRecords(); updateAreaBar(); }
+}
+
+// ── LOGIN ──
+function enterSession() {
+  const val = document.getElementById('session-input').value.trim().toUpperCase();
+  if (!val) { showToast('Ingresá un código de sesión', 'error'); return; }
+  if (/\s/.test(val)) { showToast('Sin espacios en el código', 'error'); return; }
+  session = val;
+  startApp();
+}
+
+function randomSession() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('session-input').value = code;
+  enterSession();
+}
+
+function changeSession() {
+  session = "";
+  document.getElementById('session-input').value = '';
+  showScreen('screen-login');
+}
+
+function startApp() {
+  loadCustomCatalog();
+  document.getElementById('main-session-label').textContent = session;
+  document.getElementById('main-session-val').textContent = session;
+  renderAreaList();
+  updateDatalist();
+  showScreen('screen-main');
+}
+
+// ── AREA LIST ──
+function renderAreaList() {
+  const list = document.getElementById('area-list');
+  list.innerHTML = '';
+  AREAS.forEach(area => {
+    const records = getData(area.id);
+    const totalKg = records.reduce((s, r) => s + (r.totalKg || 0), 0);
+    const count = records.length;
+    const div = document.createElement('div');
+    div.className = 'area-item';
+    div.onclick = () => openArea(area);
+    div.innerHTML = `
+      <div class="area-item-left">
+        <span class="area-icon">${area.icon}</span>
+        <div>
+          <div class="area-name">${area.name}</div>
+          <div class="area-sub">${count > 0 ? count + ' registro' + (count !== 1 ? 's' : '') : 'Sin registros'}</div>
+        </div>
+      </div>
+      <div class="area-right">
+        <span class="area-kg ${totalKg === 0 ? 'zero' : ''}">${totalKg > 0 ? totalKg.toFixed(1) + ' kg' : '—'}</span>
+        <span class="chevron">›</span>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+// ── OPEN AREA ──
+function openArea(area) {
+  currentArea = area;
+  document.getElementById('area-title').textContent = area.name;
+  renderRecords();
+  updateAreaBar();
+  resetForm();
+  showScreen('screen-area');
+}
+
+function updateAreaBar() {
+  const records = getData(currentArea.id);
+  const totalKg = records.reduce((s, r) => s + (r.totalKg || 0), 0);
+  document.getElementById('area-kg-bar').textContent = totalKg.toFixed(1) + ' kg';
+  document.getElementById('area-totals').textContent =
+    `${records.length} items · ${totalKg.toFixed(1)} kg total`;
+}
+
+// ── RECORDS RENDER ──
+function renderRecords() {
+  const records = getData(currentArea.id);
+  const container = document.getElementById('record-list');
+  if (records.length === 0) {
+    container.innerHTML = `<div class="empty-state"><p>Sin registros</p><p>Dictá o cargá manualmente</p></div>`;
+    return;
+  }
+  container.innerHTML = '';
+  records.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'record-item';
+    div.innerHTML = `
+      <div>
+        <div class="record-prod">${r.producto}</div>
+        <div class="record-envase">${r.envase}</div>
+      </div>
+      <div class="record-qty">${r.cantidad} env.</div>
+      <div class="record-kg">${(r.totalKg||0).toFixed(1)} kg</div>
+      <button class="record-del" onclick="deleteRecord(${i})">✕</button>`;
+    container.appendChild(div);
+  });
+}
+
+function deleteRecord(idx) {
+  const records = getData(currentArea.id);
+  records.splice(idx, 1);
+  setData(currentArea.id, records);
+  renderRecords();
+  updateAreaBar();
+}
+
+// ── MANUAL FORM ──
+function calcTotal() {
+  const cant = parseFloat(document.getElementById('f-cant').value) || 0;
+  const kg = parseFloat(document.getElementById('f-kgenv').value) || 0;
+  const total = cant * kg;
+  document.getElementById('f-total').textContent = total > 0 ? total.toFixed(1) + ' kg' : '0 kg';
+}
+
+function resetForm() {
+  ['f-producto','f-envase','f-cant','f-kgenv'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-total').textContent = '0 kg';
+}
+
+function addRecord(data) {
+  const prod = (data ? data.producto : document.getElementById('f-producto').value).trim();
+  const envase = (data ? data.envase : document.getElementById('f-envase').value).trim();
+  const cant = parseFloat(data ? data.cantidad : document.getElementById('f-cant').value) || 0;
+  const kgenv = parseFloat(data ? data.kgenv : document.getElementById('f-kgenv').value) || 0;
+
+  if (!prod) { showToast('Ingresá un producto', 'error'); return; }
+  if (!envase) { showToast('Ingresá el tipo de envase', 'error'); return; }
+  if (cant <= 0) { showToast('Cantidad debe ser mayor a 0', 'error'); return; }
+  if (kgenv <= 0) { showToast('Peso por envase debe ser mayor a 0', 'error'); return; }
+
+  // Validate product name
+  const match = findProductMatch(prod);
+  if (match === null) {
+    // No match at all
+    showProductDialog(prod, [], (chosen) => {
+      doAddRecord(chosen || prod, envase, cant, kgenv);
+    });
+    return;
+  } else if (match !== prod) {
+    // Fuzzy match
+    const suggestions = getFuzzySuggestions(prod);
+    showProductDialog(prod, suggestions, (chosen) => {
+      doAddRecord(chosen || prod, envase, cant, kgenv);
+    });
+    return;
+  }
+  doAddRecord(prod, envase, cant, kgenv);
+}
+
+function doAddRecord(producto, envase, cantidad, kgenv) {
+  const totalKg = cantidad * kgenv;
+  // Si el producto no está en el catálogo, guardarlo para futuras sesiones
+  addToCatalog(producto);
+  const records = getData(currentArea.id);
+  records.push({ producto, envase, cantidad, kgenv, totalKg, ts: Date.now() });
+  setData(currentArea.id, records);
+  renderRecords();
+  updateAreaBar();
+  resetForm();
+  showToast(`✓ ${producto} agregado (${totalKg.toFixed(1)} kg)`, 'success');
+  // Si estamos en el form, volver al área
+  const formScreen = document.getElementById('screen-form');
+  if (formScreen.classList.contains('active')) {
+    showScreen('screen-area');
+  }
+}
+
+// ── PRODUCT VALIDATION ──
+function normalize(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+}
+
+function findProductMatch(input) {
+  const ni = normalize(input);
+  const exact = CATALOG.find(p => normalize(p) === ni);
+  if (exact) return exact;
+  // Check if any catalog item contains the input or vice versa
+  const partial = CATALOG.find(p => normalize(p).includes(ni) || ni.includes(normalize(p)));
+  if (partial) return null; // has suggestions but no direct
+  return null;
+}
+
+function getFuzzySuggestions(input) {
+  const ni = normalize(input);
+  const words = ni.split(/\s+/);
+  return CATALOG.filter(p => {
+    const np = normalize(p);
+    return words.some(w => np.includes(w)) || np.includes(ni) || ni.includes(np);
+  }).slice(0, 5);
+}
+
+// ── DIALOG ──
+function showProductDialog(original, suggestions, cb, customMsg) {
+  dialogCallback = cb;
+  document.getElementById('dialog-title').textContent = '⚠ Confirmar producto';
+  document.getElementById('dialog-msg').textContent = customMsg ||
+    `"${original}" no está en el catálogo.${suggestions.length > 0 ? ' ¿Quisiste decir alguno de estos?' : ''}`;
+  const opts = document.getElementById('dialog-options');
+  opts.innerHTML = '';
+  suggestions.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'dialog-option';
+    btn.innerHTML = `<span class="num">${i + 1}.</span> ${s}`;
+    btn.onclick = () => { closeDialog(); cb(s); };
+    opts.appendChild(btn);
+  });
+  // Voice listener for number selection
+  startDialogVoice(suggestions, cb);
+  document.getElementById('dialog-overlay').classList.add('open');
+}
+
+function closeDialog() {
+  document.getElementById('dialog-overlay').classList.remove('open');
+  stopDialogVoice();
+}
+
+function confirmDialogNew() {
+  closeDialog();
+  if (dialogCallback) dialogCallback(null);
+}
+
+let dialogRecognition = null;
+function startDialogVoice(suggestions, cb) {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  dialogRecognition = new SR();
+  dialogRecognition.lang = 'es-MX';
+  dialogRecognition.continuous = false;
+  dialogRecognition.onresult = (e) => {
+    const text = e.results[0][0].transcript.trim();
+    const num = parseInt(text);
+    if (!isNaN(num) && num >= 1 && num <= suggestions.length) {
+      closeDialog();
+      cb(suggestions[num - 1]);
+    }
+  };
+  try { dialogRecognition.start(); } catch(e) {}
+}
+function stopDialogVoice() {
+  if (dialogRecognition) { try { dialogRecognition.stop(); } catch(e) {} dialogRecognition = null; }
+}
+
+// ── MICROPHONE ──
+let micRestartTimer = null;
+
+function toggleMic() {
+  if (isRecording) stopMic(); else startMic();
+}
+
+function startMicBtn() {
+  if (!isRecording) startMic();
+}
+
+function setMicUI(active) {
+  const startBtn = document.getElementById('mic-start-btn');
+  const status = document.getElementById('mic-status');
+  const dot = document.getElementById('area-dot');
+  if (active) {
+    if (startBtn) {
+      startBtn.style.animation = 'pulse 1.4s infinite';
+      startBtn.style.background = 'rgba(0,232,122,.3)';
+    }
+    if (status) status.textContent = 'GRABANDO...';
+    if (dot) dot.style.background = 'var(--accent)';
+  } else {
+    if (startBtn) {
+      startBtn.style.animation = '';
+      startBtn.style.background = 'rgba(0,232,122,.15)';
+    }
+    if (status) status.textContent = 'LISTO';
+    if (dot) dot.style.background = '';
+  }
+}
+
+// ── PUSH-TO-TALK ──
+// Solución definitiva para Android: grabar solo mientras el dedo está presionado.
+// La Web Speech API no corta nunca porque la sesión dura poco (mientras se habla).
+
+let pttActive = false;
+
+function pttStart(e) {
+  if (e) e.preventDefault();
+  if (pttActive) return;
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    showToast('Tu navegador no soporta reconocimiento de voz', 'error'); return;
+  }
+  pttActive = true;
+
+  // UI: botón verde pulsante
+  const btn = document.getElementById('ptt-btn');
+  const status = document.getElementById('mic-status');
+  if (btn) {
+    btn.style.background = 'rgba(0,232,122,.35)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.animation = 'pulse 1.2s infinite';
+    btn.style.transform = 'scale(1.08)';
+  }
+  if (status) status.textContent = 'GRABANDO...';
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'es-MX';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const box = document.getElementById('transcript-box');
+    if (box) box.textContent = final || interim || '—';
+    // Guardar el último final para procesarlo al soltar
+    if (final) recognition._lastFinal = final.trim();
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-available') {
+      showToast('Micrófono no disponible: ' + e.error, 'error');
+      pttReset();
+    }
+  };
+
+  recognition.onend = () => {
+    // Si el dedo sigue presionado y no es un error fatal, reiniciar
+    if (pttActive) {
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch(e) {
+    showToast('No se pudo iniciar el micrófono', 'error');
+    pttReset();
+  }
+}
+
+function pttStop(e) {
+  if (e) e.preventDefault();
+  if (!pttActive) return;
+  pttActive = false;
+  pttReset();
+
+  // Procesar lo último que se capturó
+  if (recognition) {
+    const lastText = recognition._lastFinal || '';
+    try { recognition.stop(); } catch(err) {}
+    recognition = null;
+    if (lastText) processVoiceInput(lastText);
+  }
+}
+
+function pttReset() {
+  pttActive = false;
+  const btn = document.getElementById('ptt-btn');
+  const status = document.getElementById('mic-status');
+  if (btn) {
+    btn.style.background = 'rgba(0,232,122,.12)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.animation = '';
+    btn.style.transform = '';
+  }
+  if (status) status.textContent = 'MANTENÉ APRETADO PARA HABLAR';
+}
+
+// Mantener compatibilidad con llamadas previas
+function startMicBtn() {}
+function startMic() {}
+function stopMic() { pttReset(); if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; } }
+function setMicUI() {}
+
+// ── VOICE PROCESSING CON IA ──
+let aiProcessing = false;
+
+function processVoiceInput(text) {
+  if (!text || text === pendingVoiceText) return;
+  pendingVoiceText = text;
+  setTimeout(() => { pendingVoiceText = ""; }, 4000);
+  if (aiProcessing) return; // evitar doble llamada mientras procesa
+  document.getElementById('transcript-box').textContent = `"${text}"`;
+  parseWithAI(text);
+}
+
+async function parseWithAI(text) {
+  const aiStatus = document.getElementById('ai-status');
+  aiProcessing = true;
+  aiStatus.textContent = '⏳ Interpretando...';
+
+  const catStr = CATALOG.join(', ');
+
+  const systemPrompt = `Eres un asistente de inventario de frutas y verduras. Interpretás dictados de voz y devolvés SOLO un JSON.
+
+Catálogo disponible: ${catStr}
+
+TAREA: Extraer del texto: producto, envase, cantidad y kg por envase.
+- "producto": el nombre del catálogo MÁS CERCANO semánticamente. Si el producto dictado no existe en el catálogo (ej: "elotes", "choclos", "jitomate"), buscá el equivalente más cercano. Si no hay equivalente claro, usá el nombre dictado tal cual con mayúscula inicial y marcá confianza "producto_desconocido".
+- "envase": descripción libre del envase (ej: "Bolsa 20kg", "Reja 15kg", "Caja 10kg", "Directo"). Si no se menciona, "Directo".
+- "cantidad": número de envases (entero). Si dicen "dos" o "tres" en palabras, convertir a número.
+- "kgenv": kg por envase. Si dan kg totales sin envase, poner kgenv=total y cantidad=1.
+- "confianza": "alta" si todo claro, "media" si producto ambiguo (ej: "cebolla" sin especificar), "producto_desconocido" si el producto no existe en catálogo, "baja" solo si faltan datos numéricos críticos.
+- "nota": breve explicación solo si hay ambigüedad o producto desconocido.
+
+Ejemplos:
+"30 rejas de 15 kg de tomate saladette" → {"producto":"Tomate Saladette","envase":"Reja 15kg","cantidad":30,"kgenv":15,"confianza":"alta","nota":""}
+"dos bolsas de elotes de 20 kg" → {"producto":"Elotes","envase":"Bolsa 20kg","cantidad":2,"kgenv":20,"confianza":"producto_desconocido","nota":"elotes no está en catálogo"}
+"50 bolsas cebolla 25 kilos" → {"producto":"Cebolla Blanca","envase":"Bolsa 25kg","cantidad":50,"kgenv":25,"confianza":"media","nota":"cebolla puede ser Blanca o Morada"}
+"papa 500 kg" → {"producto":"Papa","envase":"Directo","cantidad":1,"kgenv":500,"confianza":"producto_desconocido","nota":"papa no está en catálogo"}
+
+IMPORTANTE: Siempre extraé cantidad y kgenv aunque el producto sea desconocido. Solo usá confianza "baja" si no hay números en el texto.
+RESPONDE SOLO JSON, sin markdown.`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: [{ role: "user", content: text }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content?.[0]?.text || "";
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    aiProcessing = false;
+    aiStatus.textContent = '';
+
+    // Confianza baja = faltan números → form vacío para completar
+    if (parsed.confianza === 'baja' || !parsed.kgenv || !parsed.cantidad) {
+      goToFormWithData(parsed);
+      showToast('No entendí los números, completá manualmente', 'error');
+      return;
+    }
+
+    // Buscar producto exacto en catálogo
+    const exactMatch = CATALOG.find(p => normalize(p) === normalize(parsed.producto));
+
+    if (exactMatch) {
+      // Match exacto → agregar directo
+      doAddRecord(exactMatch, parsed.envase, parsed.cantidad, parsed.kgenv);
+    } else {
+      // Producto no está en catálogo → mismo flujo que carga manual
+      const suggestions = getFuzzySuggestions(parsed.producto);
+      const catalogOpts = suggestions.length >= 2 ? suggestions : [];
+      const msg = `"${parsed.producto}" no está en el catálogo.${catalogOpts.length > 0 ? ' ¿Quisiste decir alguno de estos?' : ' Realizá carga manual o agregá como nuevo.'}`;
+      showProductDialog(parsed.producto, catalogOpts, (chosen) => {
+        if (chosen) {
+          doAddRecord(chosen, parsed.envase, parsed.cantidad, parsed.kgenv);
+        } else {
+          // "Agregar como nuevo" → abrir form pre-rellenado con el nombre dictado
+          goToFormWithData({ producto: parsed.producto, envase: parsed.envase, cantidad: parsed.cantidad, kgenv: parsed.kgenv });
+        }
+      }, msg);
+    }
+
+  } catch(err) {
+    aiProcessing = false;
+    aiStatus.textContent = '';
+    goToFormWithData({ producto: '', envase: '', cantidad: '', kgenv: '' });
+    showToast('No se pudo interpretar. Completá manualmente.', 'error');
+  }
+}
+
+function guessProduct(raw) {
+  const suggestions = getFuzzySuggestions(raw);
+  if (suggestions.length > 0) return suggestions[0];
+  return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// ── NAVEGACIÓN AL FORMULARIO ──
+function goToForm() {
+  document.getElementById('form-area-title').textContent = currentArea.name;
+  resetForm();
+  showScreen('screen-form');
+}
+
+function goToFormWithData(data) {
+  document.getElementById('form-area-title').textContent = currentArea.name;
+  document.getElementById('f-producto').value = data.producto || '';
+  document.getElementById('f-envase').value = data.envase || '';
+  document.getElementById('f-cant').value = data.cantidad || '';
+  document.getElementById('f-kgenv').value = data.kgenv || '';
+  calcTotal();
+  showScreen('screen-form');
+}
+
+// ── SUMMARY GLOBAL ──
+function goToSummary() {
+  renderGlobalSummary();
+  showScreen('screen-summary');
+}
+
+function renderGlobalSummary() {
+  const allData = getAllData();
+  // Aggregate by product
+  const agg = {};
+  AREAS.forEach(area => {
+    allData[area.id].forEach(r => {
+      if (!agg[r.producto]) agg[r.producto] = { envases: 0, totalKg: 0 };
+      agg[r.producto].envases += r.cantidad;
+      agg[r.producto].totalKg += r.totalKg || 0;
+    });
+  });
+
+  const tbody = document.getElementById('global-tbody');
+  tbody.innerHTML = '';
+  const prods = Object.keys(agg).sort();
+  if (prods.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px;">Sin datos</td></tr>';
+    return;
+  }
+  let totalEnv = 0, totalKg = 0;
+  prods.forEach(prod => {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${prod}</td><td class="num">${agg[prod].envases}</td><td class="num">${agg[prod].totalKg.toFixed(1)}</td>`;
+    tbody.appendChild(row);
+    totalEnv += agg[prod].envases;
+    totalKg += agg[prod].totalKg;
+  });
+  const totRow = document.createElement('tr');
+  totRow.className = 'total-row';
+  totRow.innerHTML = `<td>TOTAL</td><td class="num">${totalEnv}</td><td class="num">${totalKg.toFixed(1)}</td>`;
+  tbody.appendChild(totRow);
+}
+
+// ── SUMMARY BY AREA ──
+function goToSummaryByArea() {
+  renderAreaSummary();
+  showScreen('screen-summary-area');
+}
+
+function renderAreaSummary() {
+  const container = document.getElementById('area-summary-content');
+  container.innerHTML = '';
+  AREAS.forEach(area => {
+    const records = getData(area.id);
+    if (records.length === 0) return;
+    const agg = {};
+    records.forEach(r => {
+      if (!agg[r.producto]) agg[r.producto] = { envases: 0, totalKg: 0 };
+      agg[r.producto].envases += r.cantidad;
+      agg[r.producto].totalKg += r.totalKg || 0;
+    });
+
+    const totalKg = records.reduce((s,r) => s + (r.totalKg||0), 0);
+    const section = document.createElement('div');
+    section.style.marginBottom = '24px';
+    section.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-weight:700;font-size:13px;">${area.icon} ${area.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);">${totalKg.toFixed(1)} kg total</div>
+      </div>
+      <table class="summary-table">
+        <thead><tr><th>Producto</th><th style="text-align:right">Envases</th><th style="text-align:right">Total kg</th></tr></thead>
+        <tbody>
+          ${Object.keys(agg).sort().map(p =>
+            `<tr><td>${p}</td><td class="num">${agg[p].envases}</td><td class="num">${agg[p].totalKg.toFixed(1)}</td></tr>`
+          ).join('')}
+        </tbody>
+      </table>`;
+    container.appendChild(section);
+  });
+  if (container.innerHTML === '') {
+    container.innerHTML = '<p style="color:var(--text3);text-align:center;padding:30px;font-size:13px;">Sin datos en ningún área</p>';
+  }
+}
+
+// ── EXPORT ──
+function exportExcel(mode) {
+  const wb = XLSX.utils.book_new();
+
+  if (mode === 'global') {
+    const allData = getAllData();
+    const agg = {};
+    AREAS.forEach(area => {
+      allData[area.id].forEach(r => {
+        if (!agg[r.producto]) agg[r.producto] = { envases: 0, totalKg: 0 };
+        agg[r.producto].envases += r.cantidad;
+        agg[r.producto].totalKg += r.totalKg || 0;
+      });
+    });
+    const rows = [['Producto', 'Envases', 'Total kg']];
+    let te = 0, tk = 0;
+    Object.keys(agg).sort().forEach(p => {
+      rows.push([p, agg[p].envases, parseFloat(agg[p].totalKg.toFixed(1))]);
+      te += agg[p].envases; tk += agg[p].totalKg;
+    });
+    rows.push(['TOTAL', te, parseFloat(tk.toFixed(1))]);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Global');
+    XLSX.writeFile(wb, `inventario_global_${session}.xlsx`);
+
+  } else {
+    AREAS.forEach(area => {
+      const records = getData(area.id);
+      if (records.length === 0) return;
+      const agg = {};
+      records.forEach(r => {
+        if (!agg[r.producto]) agg[r.producto] = { envases: 0, totalKg: 0 };
+        agg[r.producto].envases += r.cantidad;
+        agg[r.producto].totalKg += r.totalKg || 0;
+      });
+      const rows = [['Producto', 'Envases', 'Total kg']];
+      let te = 0, tk = 0;
+      Object.keys(agg).sort().forEach(p => {
+        rows.push([p, agg[p].envases, parseFloat(agg[p].totalKg.toFixed(1))]);
+        te += agg[p].envases; tk += agg[p].totalKg;
+      });
+      rows.push(['TOTAL', te, parseFloat(tk.toFixed(1))]);
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, area.name.substring(0, 31));
+    });
+    if (wb.SheetNames.length === 0) { showToast('Sin datos para exportar', 'error'); return; }
+    XLSX.writeFile(wb, `inventario_por_area_${session}.xlsx`);
+  }
+  showToast('✓ Excel descargado', 'success');
+}
+
+function exportPDF(mode) {
+  const win = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; color: #111; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    h2 { font-size: 14px; margin: 20px 0 6px; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+    p { font-size: 11px; color: #888; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+    th { background: #f0f0f0; padding: 7px 10px; text-align: left; border: 1px solid #ddd; }
+    td { padding: 6px 10px; border: 1px solid #ddd; }
+    .num { text-align: right; }
+    .total { font-weight: bold; background: #f8f8f8; }
+    @media print { button { display: none; } }
+  </style></head><body>`;
+
+  const date = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'long', year:'numeric' });
+
+  if (mode === 'global') {
+    html += `<h1>📦 Inventario — Resumen Global</h1><p>Sesión: ${session} · ${date}</p>`;
+    const allData = getAllData();
+    const agg = {};
+    AREAS.forEach(area => {
+      allData[area.id].forEach(r => {
+        if (!agg[r.producto]) agg[r.producto] = { envases: 0, totalKg: 0 };
+        agg[r.producto].envases += r.cantidad;
+        agg[r.producto].totalKg += r.totalKg || 0;
+      });
+    });
+    html += `<table><thead><tr><th>Producto</th><th class="num">Envases</th><th class="num">Total kg</th></tr></thead><tbody>`;
+    let te = 0, tk = 0;
+    Object.keys(agg).sort().forEach(p => {
+      html += `<tr><td>${p}</td><td class="num">${agg[p].envases}</td><td class="num">${agg[p].totalKg.toFixed(1)}</td></tr>`;
+      te += agg[p].envases; tk += agg[p].totalKg;
+    });
+    html += `<tr class="total"><td>TOTAL</td><td class="num">${te}</td><td class="num">${tk.toFixed(1)}</td></tr>`;
+    html += `</tbody></table>`;
+  } else {
+    html += `<h1>📦 Inventario — Resumen por Área</h1><p>Sesión: ${session} · ${date}</p>`;
+    AREAS.forEach(area => {
+      const records = getData(area.id);
+      if (records.length === 0) return;
+      const agg = {};
+      records.forEach(r => {
+        if (!agg[r.producto]) agg[r.producto] = { envases: 0, totalKg: 0 };
+        agg[r.producto].envases += r.cantidad;
+        agg[r.producto].totalKg += r.totalKg || 0;
+      });
+      const totalKg = records.reduce((s,r) => s + (r.totalKg||0), 0);
+      html += `<h2>${area.icon} ${area.name} — ${totalKg.toFixed(1)} kg total</h2>`;
+      html += `<table><thead><tr><th>Producto</th><th class="num">Envases</th><th class="num">Total kg</th></tr></thead><tbody>`;
+      let te = 0, tk = 0;
+      Object.keys(agg).sort().forEach(p => {
+        html += `<tr><td>${p}</td><td class="num">${agg[p].envases}</td><td class="num">${agg[p].totalKg.toFixed(1)}</td></tr>`;
+        te += agg[p].envases; tk += agg[p].totalKg;
+      });
+      html += `<tr class="total"><td>TOTAL</td><td class="num">${te}</td><td class="num">${tk.toFixed(1)}</td></tr>`;
+      html += `</tbody></table>`;
+    });
+  }
+
+  html += `<button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+<script>
+// ── SERVICE WORKER (PWA offline) ──
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'inventario-v1';
+const ASSETS = [location.href];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request))));
+});
+  `;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+</script>
+
+</body></html>`;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 600);
+}
+
+// ── CLEAR ──
+function clearAll() {
+  if (!confirm('¿Borrar TODO el inventario de la sesión ' + session + '? Esta acción no se puede deshacer.')) return;
+  AREAS.forEach(a => setData(a.id, []));
+  renderGlobalSummary();
+  showToast('✓ Inventario borrado', 'success');
+}
+
+function clearByArea() {
+  const names = AREAS.map((a, i) => `${i+1}. ${a.name}`).join('\n');
+  const input = prompt('¿Qué área borrar? Ingresá el número:\n\n' + names);
+  const num = parseInt(input);
+  if (isNaN(num) || num < 1 || num > AREAS.length) { showToast('Número inválido', 'error'); return; }
+  const area = AREAS[num - 1];
+  if (!confirm(`¿Borrar todos los registros de "${area.name}"?`)) return;
+  setData(area.id, []);
+  renderAreaSummary();
+  showToast(`✓ ${area.name} borrada`, 'success');
+}
+
+// ── CATALOG IMPORT ──
+function importCatalog(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.name.endsWith('.xlsx')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const products = [];
+      data.forEach(row => {
+        if (row[0] && typeof row[0] === 'string' && row[0].toLowerCase() !== 'producto') {
+          products.push(row[0].trim());
+        }
+      });
+      if (products.length > 0) {
+        CATALOG = products;
+        updateDatalist();
+        showToast(`✓ Catálogo importado: ${products.length} productos`, 'success');
+      } else {
+        showToast('No se encontraron productos en el archivo', 'error');
+      }
+    };
+    reader.readAsBinaryString(file);
+  } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const lines = e.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l && l.toLowerCase() !== 'producto');
+      if (lines.length > 0) {
+        CATALOG = lines;
+        updateDatalist();
+        showToast(`✓ Catálogo importado: ${lines.length} productos`, 'success');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  event.target.value = '';
+}
+
+function updateDatalist() {
+  const dl = document.getElementById('prod-datalist');
+  dl.innerHTML = '';
+  CATALOG.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    dl.appendChild(opt);
+  });
+}
+
+// ── TOAST ──
+let toastTimeout;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => { t.classList.remove('show'); }, 2800);
+}
+
+// ── INIT ──
+document.getElementById('session-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') enterSession();
+});
+
+// Check saved session
+const savedSession = localStorage.getItem('inv_last_session');
+if (savedSession) {
+  document.getElementById('session-input').value = savedSession;
+}
+
+// Save session on enter
+const origEnter = enterSession;
+window.enterSession = function() {
+  const val = document.getElementById('session-input').value.trim().toUpperCase();
+  if (val) localStorage.setItem('inv_last_session', val);
+  origEnter();
+};
+
+</script>
+</body>
+</html>
