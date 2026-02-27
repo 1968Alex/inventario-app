@@ -454,6 +454,99 @@ body {
 
 /* ── CATALOG IMPORT ── */
 #catalog-import-input { display: none; }
+
+/* ── QUICK FORM (embebido en área) ── */
+.quick-form {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.qf-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.qf-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 14px;
+  padding: 10px 13px;
+  outline: none;
+  transition: border-color .2s;
+}
+.qf-input:focus { border-color: var(--accent); }
+.qf-row { display: flex; gap: 8px; align-items: flex-end; }
+.qf-total {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  white-space: nowrap;
+  min-width: 72px;
+  text-align: center;
+}
+.qf-field-wrap { display: flex; flex-direction: column; }
+.new-badge {
+  font-size: 11px;
+  color: var(--warning);
+  margin-top: 5px;
+  padding: 4px 10px;
+  background: rgba(255,184,0,.08);
+  border: 1px solid rgba(255,184,0,.25);
+  border-radius: 6px;
+}
+
+/* ── AUTOCOMPLETE DROPDOWN ── */
+.ac-wrap { position: relative; }
+.ac-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.ac-dropdown.open { display: block; }
+.ac-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  transition: background .1s;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.selected { background: var(--surface2); }
+.ac-item mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+}
+.ac-item-new {
+  color: var(--warning);
+  font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -464,7 +557,7 @@ body {
     <div class="login-logo">
       <div class="emoji">📦</div>
       <h1>INVENTARIO</h1>
-      <p>Control por voz · Multi-dispositivo</p>
+      <p>Inventario de frutas y verduras · Offline</p>
     </div>
     <div class="input-group">
       <input type="text" id="session-input" placeholder="Código de sesión" autocomplete="off" spellcheck="false"/>
@@ -516,29 +609,46 @@ body {
       <span class="topbar-title" id="area-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">Área</span>
     </div>
     <div class="topbar-right" style="gap:6px;">
-      <span id="area-kg-bar" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);white-space:nowrap;">0 kg</span>
-      <div class="dot" id="area-dot"></div>
+      <span id="area-kg-bar" style="font-family:'Courier New',monospace;font-size:12px;color:var(--accent);white-space:nowrap;">0 kg</span>
     </div>
   </div>
 
-  <div class="mic-section" style="padding:16px 20px 10px;">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-      <button id="ptt-btn"
-        style="width:90px;height:90px;border-radius:50%;border:4px solid var(--accent);background:rgba(0,232,122,.12);color:var(--accent);font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none;-webkit-user-select:none;touch-action:none;"
-        onmousedown="pttStart()" onmouseup="pttStop()" onmouseleave="pttStop()"
-        ontouchstart="pttStart(event)" ontouchend="pttStop(event)" ontouchcancel="pttStop(event)">
-        🎤
-      </button>
-      <div style="text-align:center;">
-        <div id="mic-status" style="font-size:11px;letter-spacing:1px;color:var(--text3);font-family:'Syne',sans-serif;font-weight:700;">MANTENÉ APRETADO PARA HABLAR</div>
+  <!-- Formulario de carga rápida embebido -->
+  <div class="quick-form" id="quick-form">
+    <div class="qf-field-wrap">
+      <label class="qf-label">Producto</label>
+      <div class="ac-wrap" id="ac-producto-wrap">
+        <input type="text" id="qf-producto" class="qf-input" placeholder="Buscá o escribí el producto…"
+          autocomplete="off" spellcheck="false"
+          oninput="acFilter('producto')" onfocus="acFilter('producto')" onblur="acBlur('producto')"/>
+        <div class="ac-dropdown" id="ac-producto-list"></div>
+      </div>
+      <div id="qf-new-badge" class="new-badge" style="display:none;">⊕ Producto nuevo — se agregará al catálogo</div>
+    </div>
+    <div class="qf-field-wrap">
+      <label class="qf-label">Envase / Presentación</label>
+      <div class="ac-wrap" id="ac-envase-wrap">
+        <input type="text" id="qf-envase" class="qf-input" placeholder="Ej: Reja 15 kg, Caja 20 kg…"
+          autocomplete="off" spellcheck="false"
+          oninput="acFilter('envase')" onfocus="acFilter('envase')" onblur="acBlur('envase')"/>
+        <div class="ac-dropdown" id="ac-envase-list"></div>
       </div>
     </div>
-    <div class="transcript-box" id="transcript-box" style="margin-top:10px;">—</div>
-    <div id="ai-status" style="font-size:11px;color:var(--text3);margin-top:4px;min-height:14px;text-align:center;"></div>
-  </div>
-
-  <div style="padding:0 20px 12px;max-width:600px;margin:0 auto;">
-    <button class="btn btn-outline" onclick="goToForm()" style="font-size:13px;padding:10px;">+ Carga Manual</button>
+    <div class="qf-row">
+      <div class="qf-field-wrap" style="flex:1">
+        <label class="qf-label">Cantidad</label>
+        <input type="number" id="qf-cant" class="qf-input" placeholder="0" min="0" inputmode="numeric" oninput="qfCalc()"/>
+      </div>
+      <div class="qf-field-wrap" style="flex:1">
+        <label class="qf-label">kg / envase</label>
+        <input type="number" id="qf-kgenv" class="qf-input" placeholder="0" min="0" step="0.1" inputmode="decimal" oninput="qfCalc()"/>
+      </div>
+      <div class="qf-field-wrap" style="flex:0 0 auto;">
+        <label class="qf-label">Total</label>
+        <div class="qf-total" id="qf-total">0 kg</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="qfSave()">✓ Guardar registro</button>
   </div>
 
   <div class="records-section">
@@ -547,50 +657,6 @@ body {
       <span class="totals" id="area-totals">0 items · 0 kg</span>
     </div>
     <div id="record-list"></div>
-  </div>
-</div>
-
-<!-- ═══════════════ FORM ═══════════════ -->
-<div id="screen-form" class="screen">
-  <div class="topbar">
-    <div class="topbar-left">
-      <button class="back-btn" onclick="goBack('screen-area')">←</button>
-      <span class="topbar-title">Nuevo Registro — <span id="form-area-title"></span></span>
-    </div>
-  </div>
-  <div class="form-section" style="margin:20px auto;max-width:560px;">
-    <h3>Datos del Producto</h3>
-    <div class="form-row">
-      <div class="form-field" style="flex:1">
-        <label>Producto</label>
-        <input type="text" id="f-producto" placeholder="Ej: Tomate Bola" oninput="calcTotal()" list="prod-datalist"/>
-        <datalist id="prod-datalist"></datalist>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-field" style="flex:1">
-        <label>Envase / Presentación</label>
-        <input type="text" id="f-envase" placeholder="Ej: Reja 15kg, Caja 20kg, Bolsa..."/>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-field">
-        <label>Cantidad</label>
-        <input type="number" id="f-cant" placeholder="0" min="0" oninput="calcTotal()"/>
-      </div>
-      <div class="form-field">
-        <label>kg / envase</label>
-        <input type="number" id="f-kgenv" placeholder="0" min="0" step="0.1" oninput="calcTotal()"/>
-      </div>
-      <div class="form-field">
-        <label>Total kg</label>
-        <div class="total-preview" id="f-total">0 kg</div>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
-      <button class="btn btn-primary" onclick="addRecord()">✓ Guardar</button>
-      <button class="btn btn-outline" onclick="goBack('screen-area')">✕ Cancelar</button>
-    </div>
   </div>
 </div>
 
@@ -694,12 +760,13 @@ body {
 <script>
 
 // ── CATALOG ──
-let CATALOG = [
+const BASE_CATALOG = [
   "Tomate Bola","Tomate Saladette","Cebolla Blanca","Cebolla Morada",
   "Lechuga Romana","Lechuga Sangría","Manzana Red Delicious","Manzana Granny Smith",
   "Chile Poblano","Chile Habanero","Aguacate","Plátano","Zanahoria","Brócoli",
   "Espinaca","Calabacita","Pepino","Sandía","Papaya","Mango"
 ];
+let CATALOG = [...BASE_CATALOG];
 
 // ── AREAS ──
 const AREAS = [
@@ -731,13 +798,9 @@ function addToCatalog(producto) {
   if (ya) return; // ya existe
   CATALOG.push(nombre);
   CATALOG.sort();
-  // Guardar los productos custom en localStorage
+  // Guardar los productos custom en localStorage (solo los que no son base)
   try {
-    const base = ["Tomate Bola","Tomate Saladette","Cebolla Blanca","Cebolla Morada",
-      "Lechuga Romana","Lechuga Sangría","Manzana Red Delicious","Manzana Granny Smith",
-      "Chile Poblano","Chile Habanero","Aguacate","Plátano","Zanahoria","Brócoli",
-      "Espinaca","Calabacita","Pepino","Sandía","Papaya","Mango"];
-    const custom = CATALOG.filter(p => !base.includes(p));
+    const custom = CATALOG.filter(p => !BASE_CATALOG.includes(p));
     localStorage.setItem('inv_custom_catalog', JSON.stringify(custom));
   } catch(e) {}
   updateDatalist();
@@ -746,9 +809,6 @@ function addToCatalog(producto) {
 // ── STATE ──
 let session = "";
 let currentArea = null;
-let recognition = null;
-let isRecording = false;
-let pendingVoiceText = "";
 let dialogCallback = null;
 
 // ── STORAGE ──
@@ -777,7 +837,6 @@ function showScreen(id) {
 }
 
 function goBack(to) {
-  if (to === 'screen-main' && isRecording) stopMic();
   showScreen(to);
   if (to === 'screen-main') renderAreaList();
   if (to === 'screen-area') { renderRecords(); updateAreaBar(); }
@@ -788,6 +847,7 @@ function enterSession() {
   const val = document.getElementById('session-input').value.trim().toUpperCase();
   if (!val) { showToast('Ingresá un código de sesión', 'error'); return; }
   if (/\s/.test(val)) { showToast('Sin espacios en el código', 'error'); return; }
+
   session = val;
   startApp();
 }
@@ -848,7 +908,7 @@ function openArea(area) {
   document.getElementById('area-title').textContent = area.name;
   renderRecords();
   updateAreaBar();
-  resetForm();
+  qfReset();
   showScreen('screen-area');
 }
 
@@ -892,50 +952,9 @@ function deleteRecord(idx) {
   updateAreaBar();
 }
 
-// ── MANUAL FORM ──
-function calcTotal() {
-  const cant = parseFloat(document.getElementById('f-cant').value) || 0;
-  const kg = parseFloat(document.getElementById('f-kgenv').value) || 0;
-  const total = cant * kg;
-  document.getElementById('f-total').textContent = total > 0 ? total.toFixed(1) + ' kg' : '0 kg';
-}
+// ── MANUAL FORM (replaced by quick-form) ──
 
-function resetForm() {
-  ['f-producto','f-envase','f-cant','f-kgenv'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('f-total').textContent = '0 kg';
-}
-
-function addRecord(data) {
-  const prod = (data ? data.producto : document.getElementById('f-producto').value).trim();
-  const envase = (data ? data.envase : document.getElementById('f-envase').value).trim();
-  const cant = parseFloat(data ? data.cantidad : document.getElementById('f-cant').value) || 0;
-  const kgenv = parseFloat(data ? data.kgenv : document.getElementById('f-kgenv').value) || 0;
-
-  if (!prod) { showToast('Ingresá un producto', 'error'); return; }
-  if (!envase) { showToast('Ingresá el tipo de envase', 'error'); return; }
-  if (cant <= 0) { showToast('Cantidad debe ser mayor a 0', 'error'); return; }
-  if (kgenv <= 0) { showToast('Peso por envase debe ser mayor a 0', 'error'); return; }
-
-  // Validate product name
-  const match = findProductMatch(prod);
-  if (match === null) {
-    // No match at all
-    showProductDialog(prod, [], (chosen) => {
-      doAddRecord(chosen || prod, envase, cant, kgenv);
-    });
-    return;
-  } else if (match !== prod) {
-    // Fuzzy match
-    const suggestions = getFuzzySuggestions(prod);
-    showProductDialog(prod, suggestions, (chosen) => {
-      doAddRecord(chosen || prod, envase, cant, kgenv);
-    });
-    return;
-  }
-  doAddRecord(prod, envase, cant, kgenv);
-}
+// addRecord replaced by qfSave()
 
 function doAddRecord(producto, envase, cantidad, kgenv) {
   const totalKg = cantidad * kgenv;
@@ -948,11 +967,7 @@ function doAddRecord(producto, envase, cantidad, kgenv) {
   updateAreaBar();
   resetForm();
   showToast(`✓ ${producto} agregado (${totalKg.toFixed(1)} kg)`, 'success');
-  // Si estamos en el form, volver al área
-  const formScreen = document.getElementById('screen-form');
-  if (formScreen.classList.contains('active')) {
-    showScreen('screen-area');
-  }
+
 }
 
 // ── PRODUCT VALIDATION ──
@@ -962,12 +977,14 @@ function normalize(s) {
 
 function findProductMatch(input) {
   const ni = normalize(input);
+  // Coincidencia exacta → retornar el producto del catálogo
   const exact = CATALOG.find(p => normalize(p) === ni);
   if (exact) return exact;
-  // Check if any catalog item contains the input or vice versa
+  // Coincidencia parcial → retornar null para indicar "hay sugerencias pero no exacto"
   const partial = CATALOG.find(p => normalize(p).includes(ni) || ni.includes(normalize(p)));
-  if (partial) return null; // has suggestions but no direct
-  return null;
+  if (partial) return null;
+  // Sin ninguna coincidencia → retornar undefined para indicar "sin sugerencias"
+  return undefined;
 }
 
 function getFuzzySuggestions(input) {
@@ -994,14 +1011,11 @@ function showProductDialog(original, suggestions, cb, customMsg) {
     btn.onclick = () => { closeDialog(); cb(s); };
     opts.appendChild(btn);
   });
-  // Voice listener for number selection
-  startDialogVoice(suggestions, cb);
   document.getElementById('dialog-overlay').classList.add('open');
 }
 
 function closeDialog() {
   document.getElementById('dialog-overlay').classList.remove('open');
-  stopDialogVoice();
 }
 
 function confirmDialogNew() {
@@ -1009,277 +1023,176 @@ function confirmDialogNew() {
   if (dialogCallback) dialogCallback(null);
 }
 
-let dialogRecognition = null;
-function startDialogVoice(suggestions, cb) {
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  dialogRecognition = new SR();
-  dialogRecognition.lang = 'es-MX';
-  dialogRecognition.continuous = false;
-  dialogRecognition.onresult = (e) => {
-    const text = e.results[0][0].transcript.trim();
-    const num = parseInt(text);
-    if (!isNaN(num) && num >= 1 && num <= suggestions.length) {
-      closeDialog();
-      cb(suggestions[num - 1]);
-    }
-  };
-  try { dialogRecognition.start(); } catch(e) {}
-}
-function stopDialogVoice() {
-  if (dialogRecognition) { try { dialogRecognition.stop(); } catch(e) {} dialogRecognition = null; }
-}
 
-// ── MICROPHONE ──
-let micRestartTimer = null;
+// ── ENVASE SUGGESTIONS ──
+const ENVASE_CATALOG = [
+  "Reja 15 kg","Reja 20 kg","Reja 25 kg","Caja 10 kg","Caja 15 kg","Caja 20 kg",
+  "Bolsa 20 kg","Bolsa 25 kg","Bolsa 30 kg","Bulto 50 kg","Costal 25 kg",
+  "Costal 50 kg","Canasta","Directo","Pallet","Malla 1 kg","Malla 2 kg","Malla 5 kg"
+];
 
-function toggleMic() {
-  if (isRecording) stopMic(); else startMic();
-}
+// ── AUTOCOMPLETE ──
+let acSelected = { producto: -1, envase: -1 };
+let acItems = { producto: [], envase: [] };
 
-function startMicBtn() {
-  if (!isRecording) startMic();
-}
+function acFilter(field) {
+  const input = document.getElementById(field === 'producto' ? 'qf-producto' : 'qf-envase');
+  const dropdown = document.getElementById('ac-' + field + '-list');
+  const val = input.value.trim();
+  const nv = normalize(val);
+  const catalog = field === 'producto' ? CATALOG : ENVASE_CATALOG;
 
-function setMicUI(active) {
-  const startBtn = document.getElementById('mic-start-btn');
-  const status = document.getElementById('mic-status');
-  const dot = document.getElementById('area-dot');
-  if (active) {
-    if (startBtn) {
-      startBtn.style.animation = 'pulse 1.4s infinite';
-      startBtn.style.background = 'rgba(0,232,122,.3)';
-    }
-    if (status) status.textContent = 'GRABANDO...';
-    if (dot) dot.style.background = 'var(--accent)';
+  let matches = [];
+  if (nv.length === 0) {
+    matches = catalog.slice(0, 30);
   } else {
-    if (startBtn) {
-      startBtn.style.animation = '';
-      startBtn.style.background = 'rgba(0,232,122,.15)';
+    const starts = catalog.filter(p => normalize(p).startsWith(nv));
+    const contains = catalog.filter(p => !normalize(p).startsWith(nv) && normalize(p).includes(nv));
+    matches = [...starts, ...contains].slice(0, 10);
+  }
+
+  acItems[field] = matches;
+  acSelected[field] = -1;
+  dropdown.innerHTML = '';
+
+  matches.forEach((item) => {
+    const div = document.createElement('div');
+    div.className = 'ac-item';
+    if (nv.length > 0) {
+      const ni = normalize(item);
+      const idx = ni.indexOf(nv);
+      if (idx >= 0) {
+        div.innerHTML = item.substring(0, idx) +
+          '<mark>' + item.substring(idx, idx + val.length) + '</mark>' +
+          item.substring(idx + val.length);
+      } else {
+        div.textContent = item;
+      }
+    } else {
+      div.textContent = item;
     }
-    if (status) status.textContent = 'LISTO';
-    if (dot) dot.style.background = '';
+    div.onmousedown = (e) => { e.preventDefault(); acSelect(field, item); };
+    dropdown.appendChild(div);
+  });
+
+  if (field === 'producto' && val.length > 0) {
+    const exactMatch = CATALOG.find(p => normalize(p) === nv);
+    if (!exactMatch) {
+      const div = document.createElement('div');
+      div.className = 'ac-item ac-item-new';
+      div.innerHTML = '&#x2295; Agregar "<strong>' + val + '</strong>" como producto nuevo';
+      div.onmousedown = (e) => { e.preventDefault(); acSelectNew(val); };
+      dropdown.appendChild(div);
+    }
+    const badge = document.getElementById('qf-new-badge');
+    if (badge) badge.style.display = exactMatch ? 'none' : 'block';
+  }
+
+  dropdown.classList.toggle('open', dropdown.children.length > 0);
+}
+
+function acSelect(field, value) {
+  const input = document.getElementById(field === 'producto' ? 'qf-producto' : 'qf-envase');
+  input.value = value;
+  document.getElementById('ac-' + field + '-list').classList.remove('open');
+  if (field === 'producto') {
+    const badge = document.getElementById('qf-new-badge');
+    if (badge) badge.style.display = 'none';
+    setTimeout(() => document.getElementById('qf-envase').focus(), 50);
+  } else {
+    setTimeout(() => document.getElementById('qf-cant').focus(), 50);
   }
 }
 
-// ── PUSH-TO-TALK ──
-// Solución definitiva para Android: grabar solo mientras el dedo está presionado.
-// La Web Speech API no corta nunca porque la sesión dura poco (mientras se habla).
-
-let pttActive = false;
-
-function pttStart(e) {
-  if (e) e.preventDefault();
-  if (pttActive) return;
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    showToast('Tu navegador no soporta reconocimiento de voz', 'error'); return;
-  }
-  pttActive = true;
-
-  // UI: botón verde pulsante
-  const btn = document.getElementById('ptt-btn');
-  const status = document.getElementById('mic-status');
-  if (btn) {
-    btn.style.background = 'rgba(0,232,122,.35)';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.animation = 'pulse 1.2s infinite';
-    btn.style.transform = 'scale(1.08)';
-  }
-  if (status) status.textContent = 'GRABANDO...';
-
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SR();
-  recognition.lang = 'es-MX';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 1;
-
-  recognition.onresult = (e) => {
-    let interim = '', final = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript;
-      else interim += e.results[i][0].transcript;
-    }
-    const box = document.getElementById('transcript-box');
-    if (box) box.textContent = final || interim || '—';
-    // Guardar el último final para procesarlo al soltar
-    if (final) recognition._lastFinal = final.trim();
-  };
-
-  recognition.onerror = (e) => {
-    if (e.error === 'not-allowed' || e.error === 'service-not-available') {
-      showToast('Micrófono no disponible: ' + e.error, 'error');
-      pttReset();
-    }
-  };
-
-  recognition.onend = () => {
-    // Si el dedo sigue presionado y no es un error fatal, reiniciar
-    if (pttActive) {
-      try { recognition.start(); } catch(e) {}
-    }
-  };
-
-  try {
-    recognition.start();
-  } catch(e) {
-    showToast('No se pudo iniciar el micrófono', 'error');
-    pttReset();
-  }
+function acSelectNew(value) {
+  document.getElementById('qf-producto').value = value;
+  document.getElementById('ac-producto-list').classList.remove('open');
+  const badge = document.getElementById('qf-new-badge');
+  if (badge) badge.style.display = 'block';
+  setTimeout(() => document.getElementById('qf-envase').focus(), 50);
 }
 
-function pttStop(e) {
-  if (e) e.preventDefault();
-  if (!pttActive) return;
-  pttActive = false;
-  pttReset();
-
-  // Procesar lo último que se capturó
-  if (recognition) {
-    const lastText = recognition._lastFinal || '';
-    try { recognition.stop(); } catch(err) {}
-    recognition = null;
-    if (lastText) processVoiceInput(lastText);
-  }
+function acBlur(field) {
+  setTimeout(() => {
+    document.getElementById('ac-' + field + '-list').classList.remove('open');
+    if (field === 'producto') {
+      const val = document.getElementById('qf-producto').value.trim();
+      const badge = document.getElementById('qf-new-badge');
+      if (badge) {
+        if (!val) { badge.style.display = 'none'; return; }
+        const exactMatch = CATALOG.find(p => normalize(p) === normalize(val));
+        badge.style.display = exactMatch ? 'none' : 'block';
+      }
+    }
+  }, 150);
 }
 
-function pttReset() {
-  pttActive = false;
-  const btn = document.getElementById('ptt-btn');
-  const status = document.getElementById('mic-status');
-  if (btn) {
-    btn.style.background = 'rgba(0,232,122,.12)';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.animation = '';
-    btn.style.transform = '';
+document.addEventListener('keydown', (e) => {
+  for (const field of ['producto', 'envase']) {
+    const input = document.getElementById(field === 'producto' ? 'qf-producto' : 'qf-envase');
+    if (!input || document.activeElement !== input) continue;
+    const dropdown = document.getElementById('ac-' + field + '-list');
+    if (!dropdown || !dropdown.classList.contains('open')) continue;
+    const items = dropdown.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      acSelected[field] = Math.min(acSelected[field] + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('selected', i === acSelected[field]));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      acSelected[field] = Math.max(acSelected[field] - 1, -1);
+      items.forEach((el, i) => el.classList.toggle('selected', i === acSelected[field]));
+    } else if (e.key === 'Enter' && acSelected[field] >= 0) {
+      e.preventDefault();
+      items[acSelected[field]].onmousedown({ preventDefault: () => {} });
+    } else if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+    }
   }
-  if (status) status.textContent = 'MANTENÉ APRETADO PARA HABLAR';
+});
+
+// ── QUICK FORM ──
+function qfCalc() {
+  const cant = parseFloat(document.getElementById('qf-cant').value) || 0;
+  const kg = parseFloat(document.getElementById('qf-kgenv').value) || 0;
+  const total = cant * kg;
+  document.getElementById('qf-total').textContent = total > 0 ? total.toFixed(1) + ' kg' : '0 kg';
 }
 
-// Mantener compatibilidad con llamadas previas
-function startMicBtn() {}
-function startMic() {}
-function stopMic() { pttReset(); if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; } }
+function qfReset() {
+  ['qf-producto','qf-envase','qf-cant','qf-kgenv'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const tot = document.getElementById('qf-total');
+  if (tot) tot.textContent = '0 kg';
+  const badge = document.getElementById('qf-new-badge');
+  if (badge) badge.style.display = 'none';
+  ['ac-producto-list','ac-envase-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  });
+}
+
+function qfSave() {
+  const prod   = (document.getElementById('qf-producto').value || '').trim();
+  const envase = (document.getElementById('qf-envase').value || '').trim();
+  const cant   = parseFloat(document.getElementById('qf-cant').value) || 0;
+  const kgenv  = parseFloat(document.getElementById('qf-kgenv').value) || 0;
+
+  if (!prod)      { showToast('Ingresá un producto', 'error');                   document.getElementById('qf-producto').focus(); return; }
+  if (!envase)    { showToast('Ingresá el tipo de envase', 'error');             document.getElementById('qf-envase').focus();  return; }
+  if (cant <= 0)  { showToast('Cantidad debe ser mayor a 0', 'error');           document.getElementById('qf-cant').focus();    return; }
+  if (kgenv <= 0) { showToast('Peso por envase debe ser mayor a 0', 'error');    document.getElementById('qf-kgenv').focus();   return; }
+
+  doAddRecord(prod, envase, cant, kgenv);
+  qfReset();
+  setTimeout(() => document.getElementById('qf-producto').focus(), 100);
+}
+
+function stopMic() {}
 function setMicUI() {}
 
-// ── VOICE PROCESSING CON IA ──
-let aiProcessing = false;
-
-function processVoiceInput(text) {
-  if (!text || text === pendingVoiceText) return;
-  pendingVoiceText = text;
-  setTimeout(() => { pendingVoiceText = ""; }, 4000);
-  if (aiProcessing) return; // evitar doble llamada mientras procesa
-  document.getElementById('transcript-box').textContent = `"${text}"`;
-  parseWithAI(text);
-}
-
-async function parseWithAI(text) {
-  const aiStatus = document.getElementById('ai-status');
-  aiProcessing = true;
-  aiStatus.textContent = '⏳ Interpretando...';
-
-  const catStr = CATALOG.join(', ');
-
-  const systemPrompt = `Eres un asistente de inventario de frutas y verduras. Interpretás dictados de voz y devolvés SOLO un JSON.
-
-Catálogo disponible: ${catStr}
-
-TAREA: Extraer del texto: producto, envase, cantidad y kg por envase.
-- "producto": el nombre del catálogo MÁS CERCANO semánticamente. Si el producto dictado no existe en el catálogo (ej: "elotes", "choclos", "jitomate"), buscá el equivalente más cercano. Si no hay equivalente claro, usá el nombre dictado tal cual con mayúscula inicial y marcá confianza "producto_desconocido".
-- "envase": descripción libre del envase (ej: "Bolsa 20kg", "Reja 15kg", "Caja 10kg", "Directo"). Si no se menciona, "Directo".
-- "cantidad": número de envases (entero). Si dicen "dos" o "tres" en palabras, convertir a número.
-- "kgenv": kg por envase. Si dan kg totales sin envase, poner kgenv=total y cantidad=1.
-- "confianza": "alta" si todo claro, "media" si producto ambiguo (ej: "cebolla" sin especificar), "producto_desconocido" si el producto no existe en catálogo, "baja" solo si faltan datos numéricos críticos.
-- "nota": breve explicación solo si hay ambigüedad o producto desconocido.
-
-Ejemplos:
-"30 rejas de 15 kg de tomate saladette" → {"producto":"Tomate Saladette","envase":"Reja 15kg","cantidad":30,"kgenv":15,"confianza":"alta","nota":""}
-"dos bolsas de elotes de 20 kg" → {"producto":"Elotes","envase":"Bolsa 20kg","cantidad":2,"kgenv":20,"confianza":"producto_desconocido","nota":"elotes no está en catálogo"}
-"50 bolsas cebolla 25 kilos" → {"producto":"Cebolla Blanca","envase":"Bolsa 25kg","cantidad":50,"kgenv":25,"confianza":"media","nota":"cebolla puede ser Blanca o Morada"}
-"papa 500 kg" → {"producto":"Papa","envase":"Directo","cantidad":1,"kgenv":500,"confianza":"producto_desconocido","nota":"papa no está en catálogo"}
-
-IMPORTANTE: Siempre extraé cantidad y kgenv aunque el producto sea desconocido. Solo usá confianza "baja" si no hay números en el texto.
-RESPONDE SOLO JSON, sin markdown.`;
-
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 300,
-        system: systemPrompt,
-        messages: [{ role: "user", content: text }]
-      })
-    });
-
-    const data = await response.json();
-    const raw = data.content?.[0]?.text || "";
-    const clean = raw.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
-
-    aiProcessing = false;
-    aiStatus.textContent = '';
-
-    // Confianza baja = faltan números → form vacío para completar
-    if (parsed.confianza === 'baja' || !parsed.kgenv || !parsed.cantidad) {
-      goToFormWithData(parsed);
-      showToast('No entendí los números, completá manualmente', 'error');
-      return;
-    }
-
-    // Buscar producto exacto en catálogo
-    const exactMatch = CATALOG.find(p => normalize(p) === normalize(parsed.producto));
-
-    if (exactMatch) {
-      // Match exacto → agregar directo
-      doAddRecord(exactMatch, parsed.envase, parsed.cantidad, parsed.kgenv);
-    } else {
-      // Producto no está en catálogo → mismo flujo que carga manual
-      const suggestions = getFuzzySuggestions(parsed.producto);
-      const catalogOpts = suggestions.length >= 2 ? suggestions : [];
-      const msg = `"${parsed.producto}" no está en el catálogo.${catalogOpts.length > 0 ? ' ¿Quisiste decir alguno de estos?' : ' Realizá carga manual o agregá como nuevo.'}`;
-      showProductDialog(parsed.producto, catalogOpts, (chosen) => {
-        if (chosen) {
-          doAddRecord(chosen, parsed.envase, parsed.cantidad, parsed.kgenv);
-        } else {
-          // "Agregar como nuevo" → abrir form pre-rellenado con el nombre dictado
-          goToFormWithData({ producto: parsed.producto, envase: parsed.envase, cantidad: parsed.cantidad, kgenv: parsed.kgenv });
-        }
-      }, msg);
-    }
-
-  } catch(err) {
-    aiProcessing = false;
-    aiStatus.textContent = '';
-    goToFormWithData({ producto: '', envase: '', cantidad: '', kgenv: '' });
-    showToast('No se pudo interpretar. Completá manualmente.', 'error');
-  }
-}
-
-function guessProduct(raw) {
-  const suggestions = getFuzzySuggestions(raw);
-  if (suggestions.length > 0) return suggestions[0];
-  return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
-
-// ── NAVEGACIÓN AL FORMULARIO ──
-function goToForm() {
-  document.getElementById('form-area-title').textContent = currentArea.name;
-  resetForm();
-  showScreen('screen-form');
-}
-
-function goToFormWithData(data) {
-  document.getElementById('form-area-title').textContent = currentArea.name;
-  document.getElementById('f-producto').value = data.producto || '';
-  document.getElementById('f-envase').value = data.envase || '';
-  document.getElementById('f-cant').value = data.cantidad || '';
-  document.getElementById('f-kgenv').value = data.kgenv || '';
-  calcTotal();
-  showScreen('screen-form');
-}
 
 // ── SUMMARY GLOBAL ──
 function goToSummary() {
@@ -1475,30 +1388,6 @@ function exportPDF(mode) {
   }
 
   html += `<button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
-<script>
-// ── SERVICE WORKER (PWA offline) ──
-if ('serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'inventario-v1';
-const ASSETS = [location.href];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request))));
-});
-  `;
-  const blob = new Blob([swCode], {type: 'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(() => {});
-}
-</script>
-
 </body></html>`;
   win.document.write(html);
   win.document.close();
@@ -1600,11 +1489,13 @@ if (savedSession) {
 }
 
 // Save session on enter
-const origEnter = enterSession;
 window.enterSession = function() {
   const val = document.getElementById('session-input').value.trim().toUpperCase();
   if (val) localStorage.setItem('inv_last_session', val);
-  origEnter();
+  if (!val) { showToast('Ingresá un código de sesión', 'error'); return; }
+  if (/\s/.test(val)) { showToast('Sin espacios en el código', 'error'); return; }
+  session = val;
+  startApp();
 };
 
 </script>
